@@ -1,0 +1,98 @@
+/************************************ README FILE - TFTP SERVER 1.0 ****************************************************/
+
+Developed by Harihara Krishnan Narayanan (UIN: 820000656) as part of ECEN 602 coursework. 
+
+
+Table of Contents:
+
+
+1. Introduction
+
+2. Usage
+
+3. Architecture
+
+4. Test cases. (Screenshots included in the package).
+
+5. Errata (no deviant cases found). 
+
+
+
+
+
+1. Introduction:
+ 
+The package contains the implementation of the TFTP (Trivial File Transfer Protocol) server which is implemented using ARQ Selective Repeat with a window size of 4. Only READ requests can be issued to this TFTP server, Write requests are for future versions. :) The tftp_server.c contains the source code of the TFTP server. Testing has been done (have included some pics of simulations) using the tftp client in a Linux system. Compilation of the source code was done on the GCC compiler on a standard Linux machine. 
+
+
+
+2. Usage:
+
+To use and test the TFTP server, follow these steps:
+
+a. Run the make file. It will run the tftp_server.c source code. Make sure that the test_file and test_file_2 are in the same folder as that of the TFTP server. These are files which will have to be retrieved by the client. (For purposes of testing, test_file will require more than 4 packets and test_file_2 is a smaller file that requires lesser than 4 packets. Here 4, is the window size of the Selective Repeat protocol used). 
+
+b. The server expects a PORT input. Make sure that you do not specify some of the reserved ports, because for these admin rights are required. Hence the format for running the TFTP server is: "./a.out <PORT>"   If a port is not provided by the user, it will by default run on port 8000, which is hardcoded. 
+
+
+c. In  a new terminal, go to a different folder (NOTE: Pls ensure that the TFTP server and the tftp client are running on different folders, if they are on the same host machine. If they run in the same folder, there will be some unexpected problems with the file reading). Type tftp in this new terminal, and connect to the machine running the server and the specific server port.
+
+d. Once the tftp client is connected to the server, switch on packet tracing by typing "trace on". This switches on the packet tracing. Then issue a get request by typing in "GET <FILENAME>". The server will respond accordingly. 
+                 
+e. Sample test cases, covering all possible cases (to the best of author's knowledge) have been tried out. The images of these test results are included in the package. 
+
+
+
+3. Architecture: 
+
+A brief architecture of the TFTP server and design of the code is touched upon here. 
+
+* Initially, the socket structure for the TFTP server is set up and its parameters are intialized (like ip address, port, etc). After the bind function, the server is set up and ready to receive READ request from the tftp client. 
+
+* The server essentially has the main following functions: 
+  
+  a. RECEIVE READ requests from the tftp client. 
+  
+  b. SEND DATA packets (containing the file data) or ERROR packet (say, in case the file does not exist).
+
+  c. Maintain a window of packets (here, WINDOW size is 4) and have timers for each packet in the window. 
+
+  d. Receive ACK from the tftp client, and advance the window. 
+
+  e. In case of timeout for a particular packet, retransmit that particular packet alone (Selective repeat). 
+
+* Each of these broad functions of the server is implemented in the following way (in order of a - e)
+
+  a. A recv function call, gets the packet from the client. Once the packet is received, the client analyzes the contents of the packet      and responds accordingly. This is done by means of a SWITCH statement, that does a particular function depending on the opcode content in the packet. The SELECT function call that is used is capable of asynchronously switching between receving packets from multiple clients. 
+
+  b. In response to the client requests, the tftp client will issue a DATA packet or an ERROR packet depending on if the file requested is actually present or not. The approrpiate contents are entered in the packet. In case of DATA packet, 512 bytes (or lesser if it is the last block) of the file data is entered and the block number is also included. The opcode for a DATA packet is 3. In case of ERROR, the error message is included in the packet, 
+
+  c. A window size of 4 is maintained by the client. At every point of time, information regarding the time of sending packet, the packet data and the file block number included in the packet is maintained. These details are stored in arrays - transmitted_data, packet_time_sent and packet_block_number respectively. The time sent is used to find out if at any point, timeout occurs for any packet in the window. 
+
+  d. Whenver an ACK is received from the TFTP client, it advances the window and sends a new packet (if any) to the client. Also the corresponding information of this packet (as discussed in c.) is stored. 
+
+  e. This is implemented by using the SELECT function call with a timeout of 1 sec. Basically, the recvfrom function call is blocking and so will come out only if data is there to be read. Instead, the recvfrom function is accessed only if SELECT functin call reports that some client has sent data (within the timeout). Once SELECT times out, the program goes back to the beginning of the loop, where using the current time information, it is checked if there is any timeout in the window packets. If yes, then the appropriate packet is retrasmitted. 
+
+
+So, essentially the server keeps alternating between the timeout check (for packets in the window) and the SELECT function call (for checking if any client has data to send). If any of these reports true, then appropriate action is carried out and it is then back again to the loop. 
+
+
+4. TEST CASES: The tests conducted have been included in this package as screenshots. The tests were conducted at the 213 A Electrical Engineering Labs at Texas A&M University on standard Linux machines. 
+
+Three screenshots - Screenshot 1, 2 and 3 .pngs are included. 
+
+In all the 3 screenshots the terminal on the right contains the tftp client and the terminal on the left contains the tftp server. 
+
+In 1, a READ request to test_file (included in package) is issued. test_file requires sending more than 4 packets.  
+
+In 2, a READ request to test_file_2 (included in package) is issued. test_file_2 requires only 4 packets. (starts from the marked spot)
+
+In 3, a READ request to non_existent_file (file not present) is issued. Sends an error message. (starts from the marked spot).
+
+
+5. ERRATA: From the tests conducted, no deviant cases have been observed. 
+
+
+
+
+ 
