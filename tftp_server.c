@@ -1,4 +1,4 @@
-/* TFTP Server - Harihara Krishnan Narayanan  UIN:820000656 */
+/* TFTP Server - Harihara Krishnan Narayanan */
 
 
 /* Required header files */
